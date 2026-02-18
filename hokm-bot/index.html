@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حکم رویال - شرط‌بندی TON</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
+    <style>
+        body {
+            background-color: #1a472a;
+            color: white;
+            text-align: center;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            overflow: hidden; /* جلوگیری از اسکرول */
+        }
+        
+        /* دکمه کیف پول در بالای صفحه */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .card-table {
+            position: relative;
+            height: 60vh;
+            margin: 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50% / 30%; /* شکل بیضی میز */
+        }
+
+        /* استایل دست کارت‌های پایین صفحه */
+        .hand {
+            display: flex;
+            justify-content: center;
+            position: fixed;
+            bottom: 30px;
+            width: 100%;
+            height: 120px;
+        }
+
+        .card-in-hand {
+            width: 60px;
+            height: 90px;
+            background: white;
+            color: black;
+            border-radius: 8px;
+            margin-left: -25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid #999;
+        }
+
+        .card-in-hand:hover {
+            transform: translateY(-30px);
+            z-index: 100;
+        }
+
+        .red { color: #d32f2f; }
+        .black { color: #000; }
+        
+        #status-bar {
+            background: #f39c12;
+            padding: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <div id="user-info">بارگذاری...</div>
+        <div id="ton-connect"></div> </div>
+
+    <div id="status-bar">منتظر اتصال کیف پول و ورود ۴ بازیکن...</div>
+
+    <div class="card-table">
+        <h2 id="hakem-label" style="margin-top: 40%;">میز بازی حکم</h2>
+    </div>
+
+    <div class="hand" id="my-hand"></div>
+
+    <script>
+        // ۱. تنظیمات تلگرام
+        const tele = window.Telegram.WebApp;
+        tele.expand();
+        document.getElementById("user-info").innerText = tele.initDataUnsafe?.user?.first_name || "پلیر";
+
+        // ۲. تنظیمات کیف پول (برای دوستت)
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://tatizm.github.io/my-hokm-game/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect'
+        });
+
+        // ۳. اتصال به سرور (Socket)
+        const socket = io("http://localhost:3000");
+
+        socket.on('gameStarted', (data) => {
+            const handDiv = document.getElementById("my-hand");
+            handDiv.innerHTML = ""; // پاک کردن دست قبلی
+            
+            if (data.isHakem) {
+                document.getElementById("status-bar").innerText = "شما حاکم هستید! حکم کنید.";
+            } else {
+                document.getElementById("status-bar").innerText = "حاکم تعیین شد: " + data.hakemName;
+            }
+
+            // نمایش ۱۳ کارت
+            data.hand.forEach(card => {
+                const cardEl = document.createElement("div");
+                const isRed = card.suit === 'Hearts' || card.suit === 'Diamonds';
+                cardEl.className = `card-in-hand ${isRed ? 'red' : 'black'}`;
+                
+                cardEl.innerHTML = `
+                    <div>${card.value}</div>
+                    <div style="font-size: 24px;">${getSymbol(card.suit)}</div>
+                `;
+                
+                cardEl.onclick = () => playCard(card);
+                handDiv.appendChild(cardEl);
+            });
+        });
+
+        function getSymbol(suit) {
+            const symbols = {'Hearts':'♥', 'Diamonds':'♦', 'Clubs':'♣', 'Spades':'♠'};
+            return symbols[suit];
+        }
+
+        function playCard(card) {
+            console.log("کارت انداخته شد:", card);
+            socket.emit('playCard', card);
+            // اینجا می‌توانید انیمیشن حذف کارت از دست را اضافه کنید
+        }
+    </script>
+</body>
+</html>
