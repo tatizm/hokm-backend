@@ -351,10 +351,10 @@ const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server is running on port ${PORT}`);
     
-    // اجرای ربات بعد از اطمینان از بالا آمدن سرور
-    bot.start().then(() => {
-        console.log("🤖 Telegram Bot is polling...");
-    }).catch(err => {
-        console.error("❌ Bot error:", err);
+    // این لاگ به ما می‌گوید که آیا ربات اصلاً تلاش می‌کند روشن شود یا نه
+    console.log("حالا دارم سعی می‌کنم ربات تلگرام رو روشن کنم...");
+    
+    bot.start().catch(err => {
+        console.log("خطا در روشن شدن ربات:", err);
     });
 });
